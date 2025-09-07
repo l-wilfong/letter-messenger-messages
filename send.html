@@ -1,0 +1,67 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Send a Letter</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 560px; margin: 40px auto; padding: 0 16px; }
+  h1 { font-size: 24px; margin: 0 0 16px; }
+  label { display:block; margin: 14px 0 6px; font-weight: 600; }
+  input, textarea, button { width:100%; padding:10px; font-size:16px; box-sizing: border-box; }
+  textarea { resize: vertical; }
+  button { margin-top:16px; cursor:pointer; }
+  .ok { color: #0a7a3f; }
+  .err { color: #b00020; }
+  .hint { color:#666; font-size: 13px; margin-top: 6px; }
+</style>
+
+<h1>Send a Letter</h1>
+
+<label>Device ID</label>
+<input id="device" placeholder="e.g., 001" />
+
+<label>Device Password</label>
+<input id="key" type="password" placeholder="device key" />
+
+<label>Message</label>
+<textarea id="msg" rows="4" placeholder="write something sweet…"></textarea>
+
+<button id="send">Send</button>
+<p id="status"></p>
+<p class="hint">Tip: It remembers your last device in this browser.</p>
+
+<script>
+  // Your Apps Script Web App URL (the /exec link)
+  const API = "https://script.google.com/macros/s/AKfycbwHDar6FkT7FPduq5OwLaQE3fTccArtT2bUiyBvb2rfO2DkaOWQiwnET833rv5E4kWw/exec";
+  const $ = id => document.getElementById(id);
+
+  // Remember last device
+  (function(){ const d = localStorage.getItem("lm_device"); if (d) $("device").value = d; })();
+
+  $("send").onclick = async () => {
+    const device = $("device").value.trim();
+    const key    = $("key").value.trim();
+    const msg    = $("msg").value;
+
+    $("status").textContent = "Sending…"; $("status").className = "";
+
+    // Use GET: /exec?device=...&key=...&set=1&msg=...
+    // encodeURIComponent for safety
+    const url = `${API}?device=${encodeURIComponent(device)}&key=${encodeURIComponent(key)}&set=1&msg=${encodeURIComponent(msg)}`;
+
+    try {
+      const res = await fetch(url, { method: "GET" }); // no headers => no preflight
+      const data = await res.json();
+      if (data.ok) {
+        $("status").textContent = "Sent!";
+        $("status").className = "ok";
+        localStorage.setItem("lm_device", device);
+      } else {
+        $("status").textContent = "Error: " + (data.error || "unknown");
+        $("status").className = "err";
+      }
+    } catch (e) {
+      $("status").textContent = "Network error.";
+      $("status").className = "err";
+    }
+  };
+</script>
